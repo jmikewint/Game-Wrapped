@@ -27,7 +27,7 @@ export default function HowItWorks() {
         <div className="mt-14 grid gap-10 sm:grid-cols-3">
           {STEPS.map((step, i) => (
             <div key={step.title} className="relative">
-              <span className="font-display text-sm text-line">
+              <span className="font-display text-sm text-muted/60">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <h3 className="mt-3 font-display text-xl font-semibold text-ink-text">

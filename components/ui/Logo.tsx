@@ -6,7 +6,7 @@ export default function Logo() {
       aria-label="GameWrapped home"
     >
       <span
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-volt text-ink transition-transform duration-200 group-hover:-rotate-6"
+        className="flex h-8 w-8 items-center justify-center rounded-lg bg-volt text-white transition-transform duration-200 group-hover:-rotate-6"
         aria-hidden="true"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

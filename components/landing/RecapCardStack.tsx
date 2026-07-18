@@ -61,7 +61,10 @@ export default function RecapCardStack() {
         >
           <div
             className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg"
-            style={{ color: card.accent, backgroundColor: "rgba(255,255,255,0.06)" }}
+            style={{
+              color: card.accent,
+              backgroundColor: `color-mix(in srgb, ${card.accent} 14%, white)`,
+            }}
           >
             {card.icon}
           </div>

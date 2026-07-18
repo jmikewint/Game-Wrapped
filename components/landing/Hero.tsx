@@ -4,7 +4,7 @@ import RecapCardStack from "@/components/landing/RecapCardStack";
 
 export default function Hero() {
   return (
-    <section className="bg-noise relative overflow-hidden border-b border-line/60">
+    <section className="bg-noise relative overflow-hidden">
       <div className="mx-auto grid max-w-6xl gap-16 px-6 py-20 md:grid-cols-2 md:items-center md:py-28">
         <div>
           <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1 font-mono text-xs uppercase tracking-widest text-volt">
@@ -32,8 +32,7 @@ export default function Hero() {
             </a>
           </div>
           <p className="mt-4 font-mono text-xs text-muted">
-            Steam sign-in is coming in the next milestone — this build is the
-            foundation.
+            Steam sign-in ships next — this build is the foundation.
           </p>
         </div>
 

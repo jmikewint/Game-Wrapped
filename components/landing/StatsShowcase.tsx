@@ -49,7 +49,7 @@ export default function StatsShowcase() {
 
   return (
     <section id="stats" className="mx-auto max-w-6xl px-6 py-24">
-      <div className="mb-12 max-w-xl">
+      <div className="mb-14 max-w-xl">
         <p className="font-mono text-xs uppercase tracking-widest text-ice">
           Sample recap
         </p>
@@ -62,11 +62,11 @@ export default function StatsShowcase() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_CARDS.map((card) => (
           <div
             key={card.id}
-            className="rounded-2xl border border-line bg-panel p-6 transition-colors hover:border-line/0 hover:bg-panel-raised"
+            className="rounded-2xl border border-line bg-panel p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-line/0 hover:bg-panel-raised hover:shadow-lg hover:shadow-volt/10"
           >
             <p className="font-mono text-xs uppercase tracking-widest text-muted">
               {card.label}
@@ -81,7 +81,7 @@ export default function StatsShowcase() {
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-line bg-panel p-6 sm:p-8">
+      <div className="mt-8 rounded-2xl border border-line bg-panel p-6 sm:p-8">
         <p className="mb-6 font-mono text-xs uppercase tracking-widest text-muted">
           Top games by hours
         </p>
