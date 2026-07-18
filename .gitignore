@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# local files
+.env*.local
+.env
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma client output
+/generated
+
+# package manager cache
+/.npm-cache
