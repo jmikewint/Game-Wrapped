@@ -2,7 +2,7 @@
 
 GameWrapped is a Steam recap experience inspired by the energy of end-of-year music summaries. It turns playtime, achievements, and favorite games into a polished personal story.
 
-The current release is a front-end foundation: it includes the public landing experience, responsive navigation, reusable UI components, and a PostgreSQL/Prisma schema ready for Steam data. Steam OpenID authentication and live data fetching are intentionally not implemented yet — the "Sign in with Steam" button is a placeholder.
+The current release includes the public landing experience, responsive navigation, reusable UI components, a PostgreSQL/Prisma schema, and working **Steam OpenID sign-in**. Fetching and displaying real playtime/achievement data is the next milestone — right now sign-in gets you a stored profile (name, avatar, Steam ID) and a session, nothing more.
 
 ## Stack
 
@@ -19,15 +19,32 @@ app/                    # Routes, layout, metadata, and global styles
   layout.tsx
   page.tsx
   globals.css
+  api/auth/
+    steam/login/        # Redirects to Steam's OpenID login
+    steam/callback/      # Verifies Steam's response, upserts the user, starts a session
+    logout/              # Clears the session cookie
 components/
   landing/              # Hero, how-it-works, stats showcase, FAQ
-  layout/               # Navbar and footer
-  ui/                   # Button, logo, and inline SVG icon set
-lib/                    # Prisma client singleton and shared constants
+  layout/               # Navbar, footer, auth error banner
+  ui/                   # Button, LinkButton, logo, and inline SVG icon set
+lib/                    # Prisma client, Steam OpenID helpers, session, auth, constants
 prisma/                 # schema.prisma (User, Game, OwnedGame, PlaySnapshot, Recap)
 public/                 # Static assets
 types/                  # Shared TypeScript types (stat cards, featured games)
 ```
+
+## Setting up Steam sign-in
+
+1. Get a Steam Web API key at [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey). For local development, enter `localhost` as the domain.
+2. Add it to `.env` as `STEAM_API_KEY`.
+3. Set `NEXT_PUBLIC_APP_URL` to the exact URL you're running the app at (e.g. `http://localhost:3000`) — Steam checks this against where the sign-in started.
+4. Generate a session secret and add it as `SESSION_SECRET`:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+5. Restart the dev server. Clicking "Sign in with Steam" now redirects to Steam, verifies the response, looks up your public profile, and stores you as a `User` row with a signed session cookie.
+
+Your Steam profile (or at least your game details) needs to be public for the profile lookup to succeed — a private profile will redirect back with an error banner explaining that.
 
 ## Design
 
@@ -93,7 +110,7 @@ year with a shareable slug.
 
 ## Planned implementation path
 
-1. Add Steam OpenID authentication and secure session handling.
+1. ~~Add Steam OpenID authentication and secure session handling.~~ ✅ Done.
 2. Fetch Steam profile and owned-game data through the Steam Web API.
 3. Persist refreshable game snapshots through Prisma.
 4. Build an authenticated recap route with shareable story cards.

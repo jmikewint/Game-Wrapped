@@ -1,29 +1,29 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import {
   buttonBaseClasses,
   buttonVariantClasses,
   type ButtonVariant,
 } from "@/lib/button-styles";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   variant?: ButtonVariant;
   icon?: ReactNode;
 }
 
-export default function Button({
+export default function LinkButton({
   variant = "primary",
   icon,
   className = "",
   children,
   ...props
-}: ButtonProps) {
+}: LinkButtonProps) {
   return (
-    <button
+    <a
       className={`${buttonBaseClasses} ${buttonVariantClasses[variant]} ${className}`}
       {...props}
     >
       {icon}
       {children}
-    </button>
+    </a>
   );
 }

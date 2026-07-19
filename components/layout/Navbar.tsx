@@ -1,12 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/components/ui/Button";
+import type { User } from "@prisma/client";
+import LinkButton from "@/components/ui/LinkButton";
 import Logo from "@/components/ui/Logo";
 import { CloseIcon, MenuIcon, SteamIcon } from "@/components/ui/icons";
 import { NAV_LINKS } from "@/lib/constants";
 
-export default function Navbar() {
+function UserMenu({ user }: { user: User }) {
+  return (
+    <div className="flex items-center gap-3">
+      {user.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- Steam avatar URLs are dynamic per-user and not worth a remote-image config entry
+        <img
+          src={user.avatarUrl}
+          alt=""
+          className="h-8 w-8 rounded-full border border-line"
+        />
+      ) : null}
+      <span className="font-body text-sm text-ink-text">{user.displayName}</span>
+      <form action="/api/auth/logout" method="POST">
+        <button
+          type="submit"
+          className="font-body text-sm text-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink-text"
+        >
+          Sign out
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function Navbar({ user }: { user: User | null }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -30,9 +55,17 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden md:block">
-          <Button variant="primary" icon={<SteamIcon className="h-4 w-4" />}>
-            Sign in with Steam
-          </Button>
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <LinkButton
+              href="/api/auth/steam/login"
+              variant="primary"
+              icon={<SteamIcon className="h-4 w-4" />}
+            >
+              Sign in with Steam
+            </LinkButton>
+          )}
         </div>
 
         <button
@@ -60,13 +93,20 @@ export default function Navbar() {
               </a>
             ))}
           </nav>
-          <Button
-            variant="primary"
-            icon={<SteamIcon className="h-4 w-4" />}
-            className="mt-5 w-full"
-          >
-            Sign in with Steam
-          </Button>
+          <div className="mt-5">
+            {user ? (
+              <UserMenu user={user} />
+            ) : (
+              <LinkButton
+                href="/api/auth/steam/login"
+                variant="primary"
+                icon={<SteamIcon className="h-4 w-4" />}
+                className="w-full"
+              >
+                Sign in with Steam
+              </LinkButton>
+            )}
+          </div>
         </div>
       )}
     </header>
