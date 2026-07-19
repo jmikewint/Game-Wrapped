@@ -9,7 +9,7 @@ import { NAV_LINKS } from "@/lib/constants";
 
 function UserMenu({ user }: { user: User }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {user.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- Steam avatar URLs are dynamic per-user and not worth a remote-image config entry
         <img
@@ -19,6 +19,12 @@ function UserMenu({ user }: { user: User }) {
         />
       ) : null}
       <span className="font-body text-sm text-ink-text">{user.displayName}</span>
+      <a
+        href="/wrapped"
+        className="font-body text-sm font-medium text-volt transition-colors hover:text-volt-dim"
+      >
+        My Wrapped
+      </a>
       <form action="/api/auth/logout" method="POST">
         <button
           type="submit"

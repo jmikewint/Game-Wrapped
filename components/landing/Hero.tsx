@@ -45,49 +45,48 @@ export default function Hero({
               </div>
 
               {library && library.gameCount > 0 ? (
-                <div className="mt-6 flex flex-wrap gap-6 rounded-2xl border border-line bg-panel px-5 py-4">
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-widest text-muted">
-                      Games owned
-                    </p>
-                    <p className="mt-1 font-display text-2xl font-semibold text-ink-text">
-                      {library.gameCount}
-                    </p>
+                <div className="mt-6 rounded-2xl border border-line bg-panel p-6">
+                  <p className="font-mono text-xs uppercase tracking-widest text-volt">
+                    Ready when you are
+                  </p>
+                  <p className="mt-2 font-display text-xl font-semibold text-ink-text">
+                    Your {library.gameCount}-game year is ready to reveal.
+                  </p>
+                  <p className="mt-1 font-body text-sm text-muted">
+                    Hours, top games, and a personality built just for
+                    you — kept hidden until you hit play.
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center gap-4">
+                    <LinkButton href="/wrapped" variant="primary">
+                      Reveal my Wrapped
+                    </LinkButton>
+                    <form action="/api/library/sync" method="POST">
+                      <button
+                        type="submit"
+                        className="font-body text-sm font-medium text-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink-text"
+                      >
+                        Refresh my library
+                      </button>
+                    </form>
                   </div>
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-widest text-muted">
-                      Total hours
-                    </p>
-                    <p className="mt-1 font-display text-2xl font-semibold text-volt">
-                      {library.totalHours}
-                    </p>
-                  </div>
-                  {library.topGame ? (
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-widest text-muted">
-                        Most played
-                      </p>
-                      <p className="mt-1 font-display text-2xl font-semibold text-ink-text">
-                        {library.topGame.name}
-                      </p>
-                    </div>
-                  ) : null}
                 </div>
               ) : (
-                <p className="mt-4 font-mono text-xs text-muted">
-                  No games found yet — make sure your Steam game details are
-                  public, then refresh below.
-                </p>
+                <div className="mt-6 rounded-2xl border border-line bg-panel p-6">
+                  <p className="font-mono text-xs text-muted">
+                    No games found yet — make sure your Steam game details
+                    are public, then sync your library below.
+                  </p>
+                  <form action="/api/library/sync" method="POST" className="mt-4">
+                    <input type="hidden" name="redirectTo" value="/wrapped" />
+                    <button
+                      type="submit"
+                      className="font-body text-sm font-medium text-ink-text underline decoration-line underline-offset-4 transition-colors hover:text-volt"
+                    >
+                      Sync my library
+                    </button>
+                  </form>
+                </div>
               )}
-
-              <form action="/api/library/sync" method="POST" className="mt-4">
-                <button
-                  type="submit"
-                  className="font-body text-sm font-medium text-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink-text"
-                >
-                  Refresh my library
-                </button>
-              </form>
             </>
           ) : (
             <>

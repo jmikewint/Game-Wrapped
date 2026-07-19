@@ -19,18 +19,22 @@ app/                    # Routes, layout, metadata, and global styles
   layout.tsx
   page.tsx
   globals.css
+  wrapped/page.tsx      # The animated recap — guarded, full-screen, no navbar/footer
   api/auth/
     steam/login/        # Redirects to Steam's OpenID login
     steam/callback/      # Verifies Steam's response, upserts the user, starts a session
     logout/              # Clears the session cookie
+  api/library/sync/      # Re-pulls owned games for the signed-in user
 components/
   landing/              # Hero, how-it-works, stats showcase, FAQ
   layout/               # Navbar, footer, auth error banner
   ui/                   # Button, LinkButton, logo, and inline SVG icon set
-lib/                    # Prisma client, Steam OpenID helpers, session, auth, constants
+  wrapped/              # The recap slideshow: orchestrator, slides, progress bar, count-up
+lib/                    # Prisma client, Steam helpers, session, auth, constants,
+                        # library sync, and the Wrapped stat/archetype engine
 prisma/                 # schema.prisma (User, Game, OwnedGame, PlaySnapshot, Recap)
 public/                 # Static assets
-types/                  # Shared TypeScript types (stat cards, featured games)
+types/                  # Shared TypeScript types (stat cards, wrapped recap shapes)
 ```
 
 ## Setting up Steam sign-in
@@ -48,11 +52,15 @@ Your Steam profile (or at least your game details) needs to be public for the pr
 
 ## Design
 
-Dark-only theme built around a "recap card" motif — a fanned stack of stat
-cards in the hero previews what a real Steam year-in-review will look like.
-Type system pairs Space Grotesk (display) with Inter (body) and IBM Plex
-Mono (stats/data, HUD-style). Accent palette: volt green, coral, and ice
-cyan, layered on a near-black ink background.
+The landing page uses a light, lavender-to-violet theme built around a "recap card"
+motif — a fanned stack of stat cards in the hero previews what a real Steam
+year-in-review looks like. Type system pairs Space Grotesk (display) with Inter (body)
+and IBM Plex Mono (stats/data, HUD-style). Accent palette: violet ("volt"), coral, and
+ice blue.
+
+The `/wrapped` recap itself is intentionally its own thing: a full-screen, near-black
+slideshow with a different gradient per slide, independent of the landing page's theme —
+closer to Spotify Wrapped's cinematic feel than to the rest of the site.
 
 ## Getting started
 
@@ -113,14 +121,43 @@ year with a shareable slug.
 1. ~~Add Steam OpenID authentication and secure session handling.~~ ✅ Done.
 2. ~~Fetch Steam profile and owned-game data through the Steam Web API.~~ ✅ Done.
 3. Persist refreshable game snapshots through Prisma. *(Partially done — every sync writes a `PlaySnapshot`; nothing consumes them for a "this year" delta yet.)*
-4. Build an authenticated recap route with shareable story cards.
-5. Add privacy controls, error states, tests, and analytics.
+4. ~~Build an authenticated recap route with an animated, story-style reveal.~~ ✅ Done — see `/wrapped` below.
+5. Use `PlaySnapshot` deltas to scope the recap to "this year" instead of all-time, persist a `Recap` row per year, and add a real share/export view (image or shareable link).
+6. Add privacy controls, error states, tests, and analytics.
 
 ### Library sync
 
 Signing in automatically pulls your owned-games list (`lib/library-sync.ts`) and writes it into `Game` and `OwnedGame`, plus a `PlaySnapshot` row per game for future year-over-year deltas. A "Refresh my library" link on the homepage re-runs the same sync (`POST /api/library/sync`) without requiring you to sign out and back in.
 
 This requires your Steam **game details** privacy setting to be public — if it's private, sign-in still succeeds but `gameCount` comes back `0`.
+
+### The Wrapped recap (`/wrapped`)
+
+Signing in no longer dumps your stats straight onto the homepage. Instead the hero shows a
+"Reveal my Wrapped" card, and clicking it opens a full-screen, Spotify-Wrapped-style
+slideshow at `/wrapped`:
+
+1. **Intro** — your avatar and library size.
+2. **Total hours** — an animated count-up.
+3. **Top game** — your most-played title over its own header art.
+4. **Top 5** — a staggered, bar-chart-style ranked list.
+5. **Your archetype** — a fun, rule-based "you are..." label (e.g. *The Marathoner*,
+   *The Night Owl*, *The One True Game*), generated from your real numbers.
+6. **Recap card** — a shareable-looking summary, with a "watch again" option.
+
+It behaves like Instagram/Snapchat stories: a segmented progress bar auto-advances each
+slide, tapping the left/right edges of the screen (or the arrow keys) moves between
+slides, holding down pauses the timer, and Escape (or the ✕ button) exits back home.
+
+**How the archetype is picked:** `lib/superlatives.ts` runs a small rule engine —
+things like how concentrated your hours are in one game, your backlog ratio, and what
+time of day your sessions end — and returns the highest-priority match. It's pure,
+dependency-free, and easy to extend with new rules. It runs client-side (in
+`components/wrapped/WrappedExperience.tsx`) rather than on the server so time-of-day
+stats reflect your actual local timezone.
+
+If your library hasn't been synced yet, `/wrapped` shows a small prompt to sync instead
+of an empty slideshow.
 
 ## Deployment on Vercel
 
