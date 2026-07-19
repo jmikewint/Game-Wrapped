@@ -1,0 +1,88 @@
+// GameWrapped — Prisma schema
+// Models a Steam-linked user, their owned games, and periodic playtime
+// snapshots so a "wrapped" recap can be generated for any date range.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  steamId     String   @unique
+  displayName String
+  avatarUrl   String?
+  profileUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownedGames    OwnedGame[]
+  playSnapshots PlaySnapshot[]
+  recaps        Recap[]
+
+  @@map("users")
+}
+
+model Game {
+  id           String   @id @default(cuid())
+  steamAppId   Int      @unique
+  name         String
+  headerImage  String?
+  genres       String[] @default([])
+  createdAt    DateTime @default(now())
+
+  ownedBy       OwnedGame[]
+  playSnapshots PlaySnapshot[]
+
+  @@map("games")
+}
+
+model OwnedGame {
+  id                String   @id @default(cuid())
+  userId            String
+  gameId            String
+  playtimeForever    Int      @default(0) // minutes, all-time
+  playtimeTwoWeeks   Int      @default(0) // minutes, last 2 weeks
+  lastPlayedAt       DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@map("owned_games")
+}
+
+// A point-in-time capture of playtime for a user/game pair, used to
+// compute deltas over a recap window (e.g. "this year").
+model PlaySnapshot {
+  id            String   @id @default(cuid())
+  userId        String
+  gameId        String
+  capturedAt    DateTime @default(now())
+  playtimeTotal Int      @default(0) // minutes, all-time at capture
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+  @@map("play_snapshots")
+}
+
+// A generated recap for a user covering a specific window (e.g. 2026).
+model Recap {
+  id          String   @id @default(cuid())
+  userId      String
+  year        Int
+  totalMinutes Int     @default(0)
+  topGameId   String?
+  shareSlug   String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+  @@map("recaps")
+}
