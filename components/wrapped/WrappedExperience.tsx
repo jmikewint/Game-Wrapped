@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { computeWrappedStats } from "@/lib/superlatives";
 import type { WrappedRawData } from "@/types/wrapped";
@@ -95,7 +103,65 @@ export default function WrappedExperience({ raw }: { raw: WrappedRawData }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [next, prev, router]);
 
+  // Swipe support: pointerdown/pointerup deltas double as a native-feeling
+  // swipe on touch devices, layered on top of the existing tap zones. A
+  // pointerup that resolves to a swipe suppresses the click-based tap that
+  // follows it (via swipedRef) so a single gesture doesn't navigate twice.
+  const touchStart = useRef<{ x: number; y: number; time: number } | null>(null);
+  const swipedRef = useRef(false);
+
+  const SWIPE_MIN_DISTANCE = 45; // px
+  const SWIPE_MAX_DURATION = 600; // ms
+
+  function handlePointerDown(e: PointerEvent<HTMLDivElement>) {
+    setPaused(true);
+    touchStart.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  }
+
+  function handlePointerUp(e: PointerEvent<HTMLDivElement>) {
+    setPaused(false);
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+
+    const deltaX = e.clientX - start.x;
+    const deltaY = e.clientY - start.y;
+    const elapsed = Date.now() - start.time;
+    const isMostlyHorizontal = Math.abs(deltaX) > Math.abs(deltaY) * 1.5;
+
+    if (
+      Math.abs(deltaX) > SWIPE_MIN_DISTANCE &&
+      isMostlyHorizontal &&
+      elapsed < SWIPE_MAX_DURATION
+    ) {
+      swipedRef.current = true;
+      // Most browsers still fire a trailing `click` after a drag, which is
+      // what actually clears this flag (see handleTap) — but touch browsers
+      // sometimes suppress it entirely. Clear it on a short timer too, so a
+      // missing click can never permanently swallow the next real tap.
+      window.setTimeout(() => {
+        swipedRef.current = false;
+      }, 400);
+      if (deltaX < 0) {
+        next();
+      } else {
+        prev();
+      }
+    }
+  }
+
+  function handlePointerLeave() {
+    setPaused(false);
+    touchStart.current = null;
+  }
+
   function handleTap(e: MouseEvent<HTMLDivElement>) {
+    // A swipe was already handled on pointerup — don't also treat the
+    // trailing click as a tap-zone navigation.
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
     const { left, width } = e.currentTarget.getBoundingClientRect();
     const isLeftSide = e.clientX - left < width * 0.3;
     if (isLeftSide) {
@@ -137,9 +203,9 @@ export default function WrappedExperience({ raw }: { raw: WrappedRawData }) {
 
         <div
           className={`relative flex-1 overflow-hidden ${isLast ? "" : "cursor-pointer touch-manipulation"}`}
-          onPointerDown={() => setPaused(true)}
-          onPointerUp={() => setPaused(false)}
-          onPointerLeave={() => setPaused(false)}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
           onClick={isLast ? undefined : handleTap}
         >
           <div key={index} className="animate-slide-in absolute inset-0">
@@ -148,12 +214,14 @@ export default function WrappedExperience({ raw }: { raw: WrappedRawData }) {
                 displayName={raw.displayName}
                 avatarUrl={raw.avatarUrl}
                 gameCount={stats.gameCount}
+                year={stats.year}
               />
             )}
             {currentId === "hours" && (
               <TotalHoursSlide
                 totalHours={stats.totalHours}
                 gameCount={stats.gameCount}
+                isEstimated={stats.isEstimated}
               />
             )}
             {currentId === "topgame" && stats.topGame && (

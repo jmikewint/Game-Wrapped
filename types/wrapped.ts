@@ -13,10 +13,17 @@ export type WrappedGame = {
 };
 
 /** Raw per-user data fetched on the server and handed to the client-side
- * recap experience, which derives every stat and the archetype from it. */
+ * recap experience, which derives every stat and the archetype from it.
+ * `games[].minutes` is already scoped to `year` — see `getWrappedRawData`
+ * for how that delta is computed from `PlaySnapshot` rows. */
 export type WrappedRawData = {
   displayName: string;
   avatarUrl: string | null;
+  year: number;
+  /** True when we don't yet have a pre-year `PlaySnapshot` baseline for
+   * this user at all (e.g. they just signed up), so every game's "this
+   * year" minutes fell back to lifetime playtime instead of a real delta. */
+  isEstimated: boolean;
   games: WrappedGame[];
 };
 
@@ -37,6 +44,8 @@ export type WrappedArchetype = {
 
 /** Everything a slide needs to render, derived once from `WrappedRawData`. */
 export type WrappedStats = {
+  year: number;
+  isEstimated: boolean;
   totalMinutes: number;
   totalHours: number;
   gameCount: number;

@@ -176,6 +176,8 @@ export function computeWrappedStats(raw: WrappedRawData): WrappedStats {
   });
 
   return {
+    year: raw.year,
+    isEstimated: raw.isEstimated,
     totalMinutes,
     totalHours,
     gameCount,

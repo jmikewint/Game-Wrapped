@@ -9,10 +9,12 @@ export function IntroSlide({
   displayName,
   avatarUrl,
   gameCount,
+  year,
 }: {
   displayName: string;
   avatarUrl: string | null;
   gameCount: number;
+  year: number;
 }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-8 text-center">
@@ -24,7 +26,7 @@ export function IntroSlide({
           className="animate-fan-in h-20 w-20 rounded-full border-2 border-white/30 shadow-lg"
         />
       ) : null}
-      <p className={eyebrow}>Your year, wrapped</p>
+      <p className={eyebrow}>Your {year} year, wrapped</p>
       <h1 className="animate-fan-in font-display text-4xl font-semibold leading-tight text-white sm:text-5xl">
         Hey {displayName},
         <br />
@@ -41,9 +43,11 @@ export function IntroSlide({
 export function TotalHoursSlide({
   totalHours,
   gameCount,
+  isEstimated,
 }: {
   totalHours: number;
   gameCount: number;
+  isEstimated: boolean;
 }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 text-center">
@@ -57,6 +61,12 @@ export function TotalHoursSlide({
         Spread across {gameCount} game{gameCount === 1 ? "" : "s"} in your
         library.
       </p>
+      {isEstimated ? (
+        <p className="mt-1 max-w-xs font-mono text-[11px] text-white/35">
+          First recap on GameWrapped — showing lifetime totals until we&apos;ve
+          tracked a full year.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -152,6 +162,26 @@ export function ArchetypeSlide({
   );
 }
 
+/** Builds the query string for the downloadable OG-image recap card at
+ * `/api/wrapped/card`, using the exact same numbers the viewer just saw
+ * (rather than recomputing on the server, which would need to guess at
+ * timezone-dependent bits like the archetype). */
+function buildCardUrl(displayName: string, stats: WrappedStats): string {
+  const params = new URLSearchParams({
+    name: displayName,
+    year: String(stats.year),
+    hours: String(stats.totalHours),
+    games: String(stats.gameCount),
+    archTitle: stats.archetype.title,
+    archEmoji: stats.archetype.emoji,
+  });
+  if (stats.topGame) {
+    params.set("topGame", stats.topGame.name);
+    params.set("topGameHours", String(stats.topGame.hours));
+  }
+  return `/api/wrapped/card?${params.toString()}`;
+}
+
 export function OutroSlide({
   displayName,
   stats,
@@ -161,9 +191,13 @@ export function OutroSlide({
   stats: WrappedStats;
   onReplay: () => void;
 }) {
+  const cardUrl = buildCardUrl(displayName, stats);
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-8 text-center">
-      <p className={eyebrow}>{displayName}&apos;s year, wrapped</p>
+      <p className={eyebrow}>
+        {displayName}&apos;s {stats.year} year, wrapped
+      </p>
       <div className="w-full max-w-xs rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur">
         <p className="font-display text-2xl font-bold text-white">
           {stats.archetype.emoji} {stats.archetype.title}
@@ -205,6 +239,13 @@ export function OutroSlide({
         >
           Watch again
         </button>
+        <a
+          href={cardUrl}
+          download={`gamewrapped-${stats.year}.png`}
+          className="rounded-full border border-white/25 bg-white/10 px-6 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-white/20"
+        >
+          Download image
+        </a>
         <a
           href="/"
           className="rounded-full bg-white px-6 py-2.5 font-display text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
