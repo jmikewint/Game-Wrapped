@@ -21,6 +21,7 @@ model User {
 
   ownedGames    OwnedGame[]
   playSnapshots PlaySnapshot[]
+  achievements  Achievement[]
   recaps        Recap[]
 
   @@map("users")
@@ -36,6 +37,7 @@ model Game {
 
   ownedBy       OwnedGame[]
   playSnapshots PlaySnapshot[]
+  achievements  Achievement[]
 
   @@map("games")
 }
@@ -85,4 +87,27 @@ model Recap {
 
   @@unique([userId, year])
   @@map("recaps")
+}
+
+// Per-achievement unlock state for a user/game pair. Synced only for a
+// user's most-played games (see lib/library-sync.ts) to keep the Steam
+// Web API call count bounded regardless of library size. Storing
+// `unlockedAt` (rather than just a total count) is what lets the recap
+// scope "achievements unlocked" to the current calendar year instead of
+// only ever reporting a lifetime total.
+model Achievement {
+  id         String    @id @default(cuid())
+  userId     String
+  gameId     String
+  apiName    String
+  achieved   Boolean   @default(false)
+  unlockedAt DateTime?
+  syncedAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, apiName])
+  @@index([userId, achieved, unlockedAt])
+  @@map("achievements")
 }

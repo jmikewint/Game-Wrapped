@@ -3,6 +3,7 @@ import type {
   WrappedRawData,
   WrappedStats,
   WrappedTopGame,
+  WrappedTopGenre,
 } from "@/types/wrapped";
 
 type ArchetypeInput = {
@@ -80,7 +81,7 @@ const ARCHETYPE_RULES: ArchetypeRule[] = [
     test: (s) => s.sampledSessionCount >= 5 && s.earlyBirdRatio >= 0.4,
     build: (s) => ({
       title: "The Early Riser",
-      tagline: `A big chunk of your sessions happened before 9am. Coffee, then conquest.`,
+      tagline: `${Math.round(s.earlyBirdRatio * 100)}% of your sessions wrapped up before 9am. Coffee, then conquest.`,
       emoji: "🌅",
     }),
   },
@@ -163,6 +164,33 @@ export function computeWrappedStats(raw: WrappedRawData): WrappedStats {
       ? sessionHours.filter((h) => h >= 5 && h < 9).length / sampledSessionCount
       : 0;
 
+  // A game can carry multiple genre tags; each one gets the game's full
+  // minute total, same as how Spotify attributes a song to every genre it
+  // fits rather than splitting credit. Only games that have been
+  // genre-backfilled (see lib/library-sync.ts) contribute here, so this is
+  // necessarily a partial picture for a library that isn't fully synced yet
+  // — genreCoverageCount says how partial.
+  const genreMinutes = new Map<string, { minutes: number; gameCount: number }>();
+  let genreCoverageCount = 0;
+  for (const g of games) {
+    if (g.genres.length === 0) continue;
+    genreCoverageCount += 1;
+    for (const genre of g.genres) {
+      const entry = genreMinutes.get(genre) ?? { minutes: 0, gameCount: 0 };
+      entry.minutes += g.minutes;
+      entry.gameCount += 1;
+      genreMinutes.set(genre, entry);
+    }
+  }
+  let topGenre: WrappedTopGenre | null = null;
+  let topGenreMinutes = -1;
+  for (const [name, { minutes, gameCount }] of genreMinutes) {
+    if (minutes > topGenreMinutes) {
+      topGenreMinutes = minutes;
+      topGenre = { name, hours: Math.round(minutes / 60), gameCount };
+    }
+  }
+
   const archetype = pickArchetype({
     gameCount,
     totalHours,
@@ -189,6 +217,11 @@ export function computeWrappedStats(raw: WrappedRawData): WrappedStats {
     earlyBirdRatio,
     topGames,
     topGame,
+    topGenre,
+    genreCoverageCount,
+    achievementsThisYear: raw.achievementsThisYear,
+    achievementsAllTime: raw.achievementsAllTime,
+    achievementTrackedGameCount: raw.achievementTrackedGameCount,
     archetype,
   };
 }

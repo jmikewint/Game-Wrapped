@@ -1,6 +1,12 @@
+import Link from "next/link";
 import CountUp from "@/components/wrapped/CountUp";
-import { ClockIcon, FlameIcon, TrophyIcon } from "@/components/ui/icons";
-import type { WrappedArchetype, WrappedStats, WrappedTopGame } from "@/types/wrapped";
+import { ClockIcon, FlameIcon, TagIcon, TrophyIcon } from "@/components/ui/icons";
+import type {
+  WrappedArchetype,
+  WrappedStats,
+  WrappedTopGame,
+  WrappedTopGenre,
+} from "@/types/wrapped";
 
 const eyebrow =
   "font-mono text-xs uppercase tracking-[0.3em] text-white/50";
@@ -145,6 +151,49 @@ export function TopGamesListSlide({
   );
 }
 
+export function AchievementsSlide({
+  achievementsThisYear,
+  achievementsAllTime,
+  trackedGameCount,
+}: {
+  achievementsThisYear: number;
+  achievementsAllTime: number;
+  trackedGameCount: number;
+}) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 text-center">
+      <TrophyIcon className="h-8 w-8 text-white/60" />
+      <p className={eyebrow}>Achievements this year</p>
+      <p className="font-display text-7xl font-bold text-white sm:text-8xl">
+        <CountUp value={achievementsThisYear} />
+      </p>
+      <p className="font-body text-lg text-white/70">
+        unlocked in {trackedGameCount} game{trackedGameCount === 1 ? "" : "s"}
+      </p>
+      <p className="mt-3 max-w-xs font-body text-sm text-white/50">
+        {achievementsAllTime.toLocaleString()} total, all-time, across your
+        most-played games.
+      </p>
+    </div>
+  );
+}
+
+export function GenreSlide({ topGenre }: { topGenre: WrappedTopGenre }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 text-center">
+      <TagIcon className="h-8 w-8 text-white/60" />
+      <p className={eyebrow}>Your most-played genre</p>
+      <h2 className="font-display text-4xl font-bold text-white sm:text-5xl">
+        {topGenre.name}
+      </h2>
+      <p className="font-body text-lg text-white/80">
+        <CountUp value={topGenre.hours} /> hours across {topGenre.gameCount}{" "}
+        game{topGenre.gameCount === 1 ? "" : "s"}
+      </p>
+    </div>
+  );
+}
+
 export function ArchetypeSlide({
   archetype,
 }: {
@@ -178,6 +227,12 @@ function buildCardUrl(displayName: string, stats: WrappedStats): string {
   if (stats.topGame) {
     params.set("topGame", stats.topGame.name);
     params.set("topGameHours", String(stats.topGame.hours));
+  }
+  if (stats.topGenre) {
+    params.set("topGenre", stats.topGenre.name);
+  }
+  if (stats.achievementsThisYear > 0) {
+    params.set("achievements", String(stats.achievementsThisYear));
   }
   return `/api/wrapped/card?${params.toString()}`;
 }
@@ -229,6 +284,26 @@ export function OutroSlide({
               </p>
             </div>
           ) : null}
+          {stats.topGenre ? (
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Top genre
+              </p>
+              <p className="font-display text-base font-semibold text-white">
+                {stats.topGenre.name}
+              </p>
+            </div>
+          ) : null}
+          {stats.achievementsThisYear > 0 ? (
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Achievements
+              </p>
+              <p className="font-display text-base font-semibold text-white">
+                {stats.achievementsThisYear}
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-4">
@@ -246,12 +321,12 @@ export function OutroSlide({
         >
           Download image
         </a>
-        <a
+        <Link
           href="/"
           className="rounded-full bg-white px-6 py-2.5 font-display text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
         >
           Back to GameWrapped
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -25,10 +25,14 @@ function startOfCurrentYear(): Date {
  * all — i.e. they only started using GameWrapped this year — which is
  * surfaced via `isEstimated` so the UI can caveat it.
  *
- * Intentionally dumb beyond that: no aggregation happens here — that's
- * `computeWrappedStats` in `lib/superlatives.ts`, which runs on the client
- * so it can factor in the viewer's local timezone (for things like the
- * "Night Owl" archetype).
+ * Intentionally dumb beyond that: no per-game aggregation happens here —
+ * that's `computeWrappedStats` in `lib/superlatives.ts`, which runs on the
+ * client so it can factor in the viewer's local timezone (for things like
+ * the "Night Owl" archetype). The two exceptions are the achievement
+ * counts below, which have to be summed here while we still have
+ * Prisma's `Date` objects — `unlockedAt` gets serialized to an ISO string
+ * on individual games, but there's no per-game achievement breakdown to
+ * carry across that boundary anyway, just the two totals.
  */
 export async function getWrappedRawData(
   userId: string,
@@ -37,7 +41,7 @@ export async function getWrappedRawData(
 ): Promise<WrappedRawData> {
   const yearStart = startOfCurrentYear();
 
-  const [owned, baselineSnapshots] = await Promise.all([
+  const [owned, baselineSnapshots, achievementStats] = await Promise.all([
     prisma.ownedGame.findMany({
       where: { userId },
       include: { game: true },
@@ -50,6 +54,14 @@ export async function getWrappedRawData(
       where: { userId, capturedAt: { lt: yearStart } },
       orderBy: { capturedAt: "desc" },
       select: { gameId: true, playtimeTotal: true },
+    }),
+    // Achievement coverage is intentionally partial — only a user's
+    // most-played games get synced (see lib/library-sync.ts) — so we also
+    // report how many distinct games contributed, letting the UI caveat
+    // the number honestly rather than implying full-library coverage.
+    prisma.achievement.findMany({
+      where: { userId, achieved: true },
+      select: { gameId: true, unlockedAt: true },
     }),
   ]);
 
@@ -78,10 +90,19 @@ export async function getWrappedRawData(
       id: o.gameId,
       name: o.game.name,
       headerImage: o.game.headerImage,
+      genres: o.game.genres,
       minutes: minutesThisYear,
       lastPlayedAt: o.lastPlayedAt ? o.lastPlayedAt.toISOString() : null,
     };
   });
+
+  const achievementsAllTime = achievementStats.length;
+  const achievementsThisYear = achievementStats.filter(
+    (a) => a.unlockedAt && a.unlockedAt >= yearStart,
+  ).length;
+  const achievementTrackedGameCount = new Set(
+    achievementStats.map((a) => a.gameId),
+  ).size;
 
   return {
     displayName,
@@ -89,5 +110,8 @@ export async function getWrappedRawData(
     year: yearStart.getUTCFullYear(),
     isEstimated,
     games,
+    achievementsThisYear,
+    achievementsAllTime,
+    achievementTrackedGameCount,
   };
 }

@@ -123,13 +123,29 @@ year with a shareable slug.
 3. Persist refreshable game snapshots through Prisma. *(Partially done — every sync writes a `PlaySnapshot`; nothing consumes them for a "this year" delta yet.)*
 4. ~~Build an authenticated recap route with an animated, story-style reveal.~~ ✅ Done — see `/wrapped` below.
 5. Use `PlaySnapshot` deltas to scope the recap to "this year" instead of all-time, persist a `Recap` row per year, and add a real share/export view (image or shareable link).
-6. Add privacy controls, error states, tests, and analytics.
+6. ~~Add achievement and genre data depth.~~ ✅ Done — see below. Both are intentionally scoped/bounded rather than full-coverage; see the caveats.
+7. Add privacy controls, error states, tests, and analytics.
 
 ### Library sync
 
 Signing in automatically pulls your owned-games list (`lib/library-sync.ts`) and writes it into `Game` and `OwnedGame`, plus a `PlaySnapshot` row per game for future year-over-year deltas. A "Refresh my library" link on the homepage re-runs the same sync (`POST /api/library/sync`) without requiring you to sign out and back in.
 
 This requires your Steam **game details** privacy setting to be public — if it's private, sign-in still succeeds but `gameCount` comes back `0`.
+
+### Achievements
+
+Every sync also pulls achievement unlock state (`ISteamUserStats/GetPlayerAchievements`) for your **10 most-played games** and stores it in a new `Achievement` table, one row per achievement with an `unlockedAt` timestamp. That's a deliberate bound, not full coverage: fetching achievements for an entire library (some are 500+ games) would mean hundreds of sequential Steam API calls on every login, which doesn't scale and would make sign-in noticeably slow. Scoping to the most-played games covers the overwhelming majority of a person's actual achievement activity, since games with more playtime almost always have more unlocks. Re-synced every login, so newly unlocked achievements in those games show up next time you refresh.
+
+Storing `unlockedAt` (not just a total count) is what lets the recap report "achievements unlocked **this year**" rather than only a lifetime total — see `getWrappedRawData` in `lib/wrapped.ts`.
+
+### Genres
+
+`Game.genres` is populated by calling Steam's storefront API (`store.steampowered.com/api/appdetails`) per app. This is an **unofficial, undocumented** endpoint with no published rate limits, so `lib/library-sync.ts` treats it carefully:
+
+- **Cached forever once fetched.** Genres essentially never change, so a game is only queried once — subsequent syncs skip anything that already has genre data cached.
+- **Backfilled gradually.** Each sync only fetches genres for up to **8** games that don't have them yet (prioritized by playtime), with a 350ms delay between requests. A large, never-before-synced library fills in its genre data across several logins rather than all at once on the first one.
+
+Until a game has been backfilled, it just doesn't contribute to the "top genre" slide — `computeWrappedStats` in `lib/superlatives.ts` only counts games that have cached genre tags, and skips the slide entirely if none do yet.
 
 ### The Wrapped recap (`/wrapped`)
 
@@ -141,9 +157,11 @@ slideshow at `/wrapped`:
 2. **Total hours** — an animated count-up.
 3. **Top game** — your most-played title over its own header art.
 4. **Top 5** — a staggered, bar-chart-style ranked list.
-5. **Your archetype** — a fun, rule-based "you are..." label (e.g. *The Marathoner*,
+5. **Top genre** — shown only once at least one owned game has cached genre data (see above).
+6. **Achievements this year** — shown only if at least one has unlocked in your most-played games (see above).
+7. **Your archetype** — a fun, rule-based "you are..." label (e.g. *The Marathoner*,
    *The Night Owl*, *The One True Game*), generated from your real numbers.
-6. **Recap card** — a shareable-looking summary, with a "watch again" option.
+8. **Recap card** — a shareable-looking summary, with a "watch again" option and a downloadable PNG (`/api/wrapped/card`).
 
 It behaves like Instagram/Snapchat stories: a segmented progress bar auto-advances each
 slide, tapping the left/right edges of the screen (or the arrow keys) moves between

@@ -43,10 +43,14 @@ export async function GET(request: NextRequest) {
   const archEmoji = clip(searchParams.get("archEmoji"), 8, "🎮");
   const topGame = clip(searchParams.get("topGame"), 60, "");
   const topGameHours = clipInt(searchParams.get("topGameHours"), 0);
+  const topGenre = clip(searchParams.get("topGenre"), 40, "");
+  const achievements = clipInt(searchParams.get("achievements"), 0);
 
-  try {
-    return new ImageResponse(
-      (
+  // Built outside the try/catch below on purpose — JSX construction itself
+  // can't throw in a way a try/catch here would meaningfully catch (Satori
+  // does the actual rendering work inside `new ImageResponse(...)`, which
+  // is what the try/catch below is guarding).
+  const card = (
         <div
           style={{
             width: "100%",
@@ -63,6 +67,7 @@ export async function GET(request: NextRequest) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
               style={{
+                display: "flex",
                 fontSize: 30,
                 letterSpacing: 6,
                 textTransform: "uppercase",
@@ -125,8 +130,42 @@ export async function GET(request: NextRequest) {
                   >
                     Most played
                   </div>
-                  <div style={{ fontSize: 40, fontWeight: 600, color: "#ffffff" }}>
+                  <div style={{ display: "flex", fontSize: 40, fontWeight: 600, color: "#ffffff" }}>
                     {topGame} · {topGameHours}h
+                  </div>
+                </div>
+              ) : null}
+              {topGenre ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      color: "rgba(255,255,255,0.45)",
+                      textTransform: "uppercase",
+                      letterSpacing: 3,
+                    }}
+                  >
+                    Top genre
+                  </div>
+                  <div style={{ fontSize: 40, fontWeight: 600, color: "#ffffff" }}>
+                    {topGenre}
+                  </div>
+                </div>
+              ) : null}
+              {achievements > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      color: "rgba(255,255,255,0.45)",
+                      textTransform: "uppercase",
+                      letterSpacing: 3,
+                    }}
+                  >
+                    Achievements
+                  </div>
+                  <div style={{ fontSize: 40, fontWeight: 600, color: "#ffffff" }}>
+                    {achievements}
                   </div>
                 </div>
               ) : null}
@@ -174,9 +213,10 @@ export async function GET(request: NextRequest) {
             GameWrapped
           </div>
         </div>
-      ),
-      { width: WIDTH, height: HEIGHT },
-    );
+  );
+
+  try {
+    return new ImageResponse(card, { width: WIDTH, height: HEIGHT });
   } catch (error) {
     // Surface a real, inspectable error instead of letting the connection
     // just drop — a raw ImageResponse/Satori failure otherwise reads in the

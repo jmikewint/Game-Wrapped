@@ -114,6 +114,84 @@ export async function fetchOwnedGames(
     }));
 }
 
+export type PlayerAchievement = {
+  apiName: string;
+  achieved: boolean;
+  unlockedAt: Date | null;
+};
+
+/**
+ * Looks up a player's achievement progress for one app. Many games have no
+ * achievements/stats at all, in which case Steam returns a non-200 response
+ * or `success: false` rather than an error worth surfacing — both cases
+ * just resolve to `null` so callers can skip the game silently.
+ */
+export async function fetchPlayerAchievements(
+  steamId: string,
+  appId: number,
+): Promise<PlayerAchievement[] | null> {
+  const apiKey = process.env.STEAM_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "STEAM_API_KEY is not set. Get one at https://steamcommunity.com/dev/apikey and add it to your .env file.",
+    );
+  }
+
+  const url = new URL(
+    "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0002/",
+  );
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set("steamid", steamId);
+  url.searchParams.set("appid", String(appId));
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) return null; // typically "Requested app has no stats"
+
+  const data = await response.json();
+  const stats = data?.playerstats;
+  if (!stats?.success || !Array.isArray(stats.achievements)) return null;
+
+  return (
+    stats.achievements as Array<{
+      apiname: string;
+      achieved: number;
+      unlocktime?: number;
+    }>
+  ).map((a) => ({
+    apiName: a.apiname,
+    achieved: a.achieved === 1,
+    unlockedAt:
+      a.achieved === 1 && a.unlocktime ? new Date(a.unlocktime * 1000) : null,
+  }));
+}
+
+/**
+ * Looks up genre tags for one app via Steam's storefront API. This is an
+ * unofficial, undocumented endpoint (not part of the Web API proper) with
+ * unpublished, aggressive-feeling rate limits — callers must throttle
+ * requests themselves (see GENRE_BACKFILL_DELAY_MS in library-sync.ts) and
+ * should cache the result rather than re-fetching on every sync.
+ */
+export async function fetchAppGenres(appId: number): Promise<string[] | null> {
+  const url = new URL("https://store.steampowered.com/api/appdetails");
+  url.searchParams.set("appids", String(appId));
+  url.searchParams.set("filters", "genres");
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  const entry = data?.[String(appId)];
+  if (!entry?.success) return null;
+
+  const genres = entry.data?.genres as
+    | Array<{ id: string; description: string }>
+    | undefined;
+  if (!genres) return null;
+
+  return genres.map((g) => g.description);
+}
+
 export type SteamProfile = {
   steamId: string;
   displayName: string;

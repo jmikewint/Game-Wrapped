@@ -19,10 +19,7 @@ export default function CountUp({
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    if (value === 0) {
-      setDisplay(0);
-      return;
-    }
+    if (value === 0) return;
 
     let frame: number;
     const start = performance.now();

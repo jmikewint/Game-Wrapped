@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth";
 import { getWrappedRawData } from "@/lib/wrapped";
@@ -38,12 +39,12 @@ export default async function WrappedPage() {
             Sync my library
           </button>
         </form>
-        <a
+        <Link
           href="/"
           className="font-body text-sm text-white/50 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white/80"
         >
           Back to GameWrapped
-        </a>
+        </Link>
       </main>
     );
   }

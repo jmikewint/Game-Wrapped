@@ -15,7 +15,9 @@ import type { WrappedRawData } from "@/types/wrapped";
 import ProgressBar from "@/components/wrapped/ProgressBar";
 import { CloseIcon } from "@/components/ui/icons";
 import {
+  AchievementsSlide,
   ArchetypeSlide,
+  GenreSlide,
   IntroSlide,
   OutroSlide,
   TopGameSlide,
@@ -28,6 +30,8 @@ type SlideId =
   | "hours"
   | "topgame"
   | "toplist"
+  | "genre"
+  | "achievements"
   | "archetype"
   | "outro";
 
@@ -37,6 +41,8 @@ const DURATIONS: Record<SlideId, number> = {
   hours: 3200,
   topgame: 3400,
   toplist: 5200,
+  genre: 3200,
+  achievements: 3200,
   archetype: 4200,
   outro: 0,
 };
@@ -49,6 +55,9 @@ const BACKGROUNDS: Record<SlideId, string> = {
   hours: "linear-gradient(160deg, #0b0713 0%, #241a3d 55%, #3c2a63 100%)",
   topgame: "#050308",
   toplist: "linear-gradient(160deg, #0b0713 0%, #1a1330 100%)",
+  genre: "linear-gradient(160deg, #0b0713 0%, #1f2f52 60%, #2a4a6e 100%)",
+  achievements:
+    "radial-gradient(circle at 50% 20%, rgba(198,255,61,0.28), transparent 55%), linear-gradient(160deg, #0b0713 0%, #1a1330 100%)",
   archetype:
     "radial-gradient(circle at 50% 25%, rgba(255,111,156,0.5), transparent 60%), linear-gradient(160deg, #170b28 0%, #2b1642 100%)",
   outro: "linear-gradient(160deg, #0b0713 0%, #1a1330 100%)",
@@ -62,6 +71,8 @@ export default function WrappedExperience({ raw }: { raw: WrappedRawData }) {
     const order: SlideId[] = ["intro", "hours"];
     if (stats.topGame) order.push("topgame");
     if (stats.topGames.length > 1) order.push("toplist");
+    if (stats.topGenre) order.push("genre");
+    if (stats.achievementsThisYear > 0) order.push("achievements");
     order.push("archetype", "outro");
     return order;
   }, [stats]);
@@ -229,6 +240,16 @@ export default function WrappedExperience({ raw }: { raw: WrappedRawData }) {
             )}
             {currentId === "toplist" && (
               <TopGamesListSlide topGames={stats.topGames} />
+            )}
+            {currentId === "genre" && stats.topGenre && (
+              <GenreSlide topGenre={stats.topGenre} />
+            )}
+            {currentId === "achievements" && (
+              <AchievementsSlide
+                achievementsThisYear={stats.achievementsThisYear}
+                achievementsAllTime={stats.achievementsAllTime}
+                trackedGameCount={stats.achievementTrackedGameCount}
+              />
             )}
             {currentId === "archetype" && (
               <ArchetypeSlide archetype={stats.archetype} />
